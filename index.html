@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ôn tập môn Tin học - Nâng cao</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* LMS Scroll Fix & Base */
+        html, body {
+            overflow: hidden;
+            height: 100%;
+            font-family: 'Nunito', sans-serif;
+            background-color: #fdf2f8; 
+            background-image: radial-gradient(#fbcfe8 2px, transparent 2px);
+            background-size: 30px 30px;
+        }
+
+        #app {
+            height: 100vh;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 4px solid #fff;
+        }
+
+        /* Dynamic Backgrounds per Question Type */
+        .bg-type-radio { background-color: #eff6ff; } /* Xanh nhạt */
+        .bg-type-tf { background-color: #f0fdf4; } /* Xanh lá */
+        .bg-type-text { background-color: #fff7ed; } /* Cam */
+        .bg-type-dropdown { background-color: #f3e8ff; } /* Tím nhạt */
+        .bg-type-match, .bg-type-order { background-color: #fefce8; } /* Vàng */
+
+        /* Option Styles */
+        .option-label { transition: all 0.2s ease-in-out; }
+        .option-label:hover:not(.disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .option-label.selected { border-color: #3b82f6; background-color: #eff6ff; }
+        .option-label.correct { border-color: #22c55e; background-color: #dcfce7; color: #166534; }
+        .option-label.wrong { border-color: #ef4444; background-color: #fee2e2; color: #991b1b; }
+        .disabled { pointer-events: none; opacity: 0.8; }
+
+        /* Animations */
+        @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes bounce-x { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
+        .animate-bounce-x { animation: bounce-x 1s infinite; }
+
+        @keyframes streak-pop { 0% { transform: scale(0.5) translateY(50px); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+        .streak-animate { animation: streak-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        /* Text Input */
+        .text-input {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>');
+            background-repeat: no-repeat;
+            background-position: 1rem center;
+            padding-left: 3rem !important;
+        }
+
+        /* Sort & Match Tap UI */
+        .tap-item { transition: all 0.2s; cursor: pointer; }
+        .tap-item.active { border-color: #eab308; background-color: #fef9c3; transform: scale(1.02); box-shadow: 0 4px 10px rgba(234, 179, 8, 0.3); }
+        .tap-item.matched { background-color: #dcfce7; border-color: #22c55e; color: #15803d; opacity: 0.8; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Audio Toggle -->
+    <button onclick="app.toggleBGM()" id="btn-audio" class="fixed top-4 right-4 z-50 bg-white p-3 rounded-full shadow-lg text-2xl border-2 border-gray-200 transition hover:scale-110">
+        🔇
+    </button>
+
+    <div id="app">
+        <!-- Main Card Container -->
+        <div class="glass-card rounded-[2rem] w-full max-w-4xl h-[95vh] md:h-auto md:max-h-[95vh] flex flex-col overflow-hidden relative animate-pop">
+            
+            <!-- SCREEN 1: HOME -->
+            <div id="screen-home" class="p-6 md:p-12 flex-1 flex flex-col justify-start md:justify-center items-center text-center overflow-y-auto">
+                <div class="w-20 h-20 md:w-24 md:h-24 bg-blue-100 rounded-full flex items-center justify-center text-4xl md:text-5xl mb-4 shadow-inner shrink-0 mt-4 md:mt-0">💻</div>
+                <h1 class="text-3xl md:text-5xl font-extrabold text-blue-800 mb-2 drop-shadow-sm shrink-0">ÔN TẬP MÔN TIN HỌC</h1>
+                <p class="text-lg md:text-xl text-gray-600 mb-6 font-semibold shrink-0">Cùng kiểm tra kiến thức của em nhé!</p>
+                
+                <div id="saved-session-alert" class="hidden mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-r shadow-sm w-full max-w-md text-left shrink-0">
+                    <p class="font-bold">👋 Chào mừng trở lại!</p>
+                    <p>Em đang làm dở bài tập. <button onclick="app.resumeQuiz()" class="underline font-bold hover:text-green-900">Tiếp tục ngay</button> hoặc bắt đầu lại bên dưới.</p>
+                </div>
+
+                <div class="w-full max-w-md space-y-4 text-left shrink-0 mb-6">
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2 ml-2">Họ và tên của em:</label>
+                        <input type="text" id="studentName" placeholder="Nhập họ tên..." class="w-full px-5 py-3 rounded-2xl border-2 border-gray-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition text-lg font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2 ml-2">Lớp:</label>
+                        <input type="text" id="studentClass" placeholder="Ví dụ: 3A1" class="w-full px-5 py-3 rounded-2xl border-2 border-gray-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition text-lg font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2 ml-2">Chọn phần ôn tập:</label>
+                        <select id="sectionSelect" class="w-full px-5 py-3 bg-white rounded-2xl border-2 border-gray-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition text-lg font-semibold text-gray-700">
+                            <option value="all">Tất cả các phần (Tổng hợp 30 câu)</option>
+                            <option value="part1">Phần 1: Tổ chức, lưu trữ thông tin</option>
+                            <option value="part2">Phần 2: Đạo đức môi trường số</option>
+                            <option value="part3">Phần 3: Giải quyết vấn đề với máy tính</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button onclick="app.startQuiz(false)" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-extrabold text-xl py-4 px-12 rounded-full shadow-lg transform transition hover:scale-105 active:scale-95 shrink-0 mb-4">
+                    BẮT ĐẦU MỚI 🚀
+                </button>
+            </div>
+
+            <!-- SCREEN 2: QUIZ -->
+            <div id="screen-quiz" class="hidden flex-1 flex flex-col transition-colors duration-500 overflow-hidden">
+                
+                <!-- Gamification Streak Toast -->
+                <div id="streak-toast" class="hidden absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-orange-500 to-red-500 text-white font-black text-xl px-6 py-2 rounded-full shadow-2xl border-4 border-white">
+                    🔥 <span id="streak-text">3 câu liên tiếp!</span>
+                </div>
+
+                <!-- Header / Progress -->
+                <div class="p-6 md:p-8 pb-0 shrink-0">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                        <div class="bg-white/80 backdrop-blur text-gray-800 font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-2 border border-white">
+                            👤 <span id="display-name"></span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 md:gap-3">
+                            <span id="topic-badge" class="bg-white/80 text-gray-700 px-3 py-1 rounded-lg text-sm font-bold shadow-sm hidden md:inline-block border border-white">
+                                Chủ đề
+                            </span>
+                            <span class="bg-white/80 text-gray-700 px-3 py-1 rounded-lg text-sm font-bold shadow-sm hidden md:flex items-center gap-1 border border-white">
+                                <span id="type-icon"></span> <span id="type-text">Trắc nghiệm</span>
+                            </span>
+                            <div class="text-lg font-black text-gray-700 bg-white/80 px-3 py-1 rounded-lg shadow-sm border border-white">
+                                Câu <span id="current-question-num" class="text-2xl text-blue-600">1</span>/<span id="total-questions-num">30</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full bg-white/50 rounded-full h-3 mb-6 shadow-inner overflow-hidden">
+                        <div id="progress-bar" class="bg-gradient-to-r from-green-400 to-blue-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Question Area -->
+                <div class="flex-1 flex flex-col relative px-6 md:px-8 pb-6 md:pb-8 min-h-0">
+                    <div class="flex justify-between items-start gap-4 mb-4 shrink-0">
+                        <h2 id="question-text" class="text-2xl md:text-3xl font-extrabold text-gray-800 leading-relaxed">
+                            Nội dung câu hỏi?
+                        </h2>
+                        <div class="flex gap-2 shrink-0">
+                            <!-- How to button -->
+                            <button onclick="app.showHelp()" class="bg-white hover:bg-gray-50 text-gray-600 font-bold w-10 h-10 rounded-full shadow-sm transition border border-gray-200 flex items-center justify-center text-xl" title="Cách làm">
+                                ❓
+                            </button>
+                            <!-- Hint Button -->
+                            <button onclick="app.toggleHint()" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-bold py-2 px-4 rounded-xl border border-yellow-300 shadow-sm transition flex items-center gap-2">
+                                💡 <span class="hidden md:inline">Gợi ý</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hint & Help Boxes -->
+                    <div id="help-box" class="hidden mb-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded-r-xl shadow-inner font-medium animate-pop text-sm"></div>
+                    <div id="hint-box" class="hidden mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded-r-xl shadow-inner font-medium animate-pop text-sm">
+                        <strong class="font-bold">Gợi ý:</strong> <span id="hint-text"></span>
+                    </div>
+                    
+                    <div id="answer-area" class="flex-1 flex flex-col gap-3 overflow-y-auto pr-2 pb-2">
+                        <!-- Options injected here -->
+                    </div>
+
+                    <!-- Feedback Area -->
+                    <div id="feedback-area" class="hidden mt-6 p-4 rounded-2xl border-2 font-bold text-lg flex items-start gap-3 animate-pop bg-white/90 backdrop-blur">
+                        <span id="feedback-icon" class="text-3xl mt-1"></span>
+                        <div id="feedback-text" class="leading-relaxed"></div>
+                    </div>
+                    
+                    <!-- Footer Actions (Updated Layout) -->
+                    <div class="mt-6 flex justify-between items-center shrink-0 border-t-2 border-white/50 pt-4">
+                        <button id="btn-prev" onclick="app.prevQuestion()" class="hidden bg-gray-100 hover:bg-gray-200 text-gray-700 font-black text-lg py-3 px-6 rounded-2xl shadow-sm transition transform hover:-translate-x-1">
+                            ⬅️ Quay lại
+                        </button>
+                        <div class="flex gap-3 ml-auto">
+                            <button id="btn-check" onclick="app.checkAnswer()" class="bg-blue-600 hover:bg-blue-700 text-white font-black text-lg py-3 px-6 rounded-2xl shadow-xl transition transform hover:scale-105 active:scale-95">
+                                Kiểm tra ✔️
+                            </button>
+                            <button id="btn-next" onclick="app.nextQuestion()" class="bg-green-500 hover:bg-green-600 text-white font-black text-lg py-3 px-6 rounded-2xl shadow-xl transition transform hover:scale-105">
+                                Tiếp tục ➡️
+                            </button>
+                            <button id="btn-submit" onclick="app.submitQuiz()" class="hidden bg-red-500 hover:bg-red-600 text-white font-black text-lg py-3 px-6 rounded-2xl shadow-xl transition transform hover:scale-105 active:scale-95">
+                                Nộp bài 🏁
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 3: RESULT -->
+            <div id="screen-result" class="hidden p-4 md:p-8 flex-1 flex flex-col justify-start md:justify-center items-center text-center overflow-y-auto">
+                <div class="text-5xl md:text-6xl mb-2 md:mb-4 animate-bounce mt-4 md:mt-0" id="result-emoji">🏆</div>
+                <h2 class="text-2xl md:text-3xl font-extrabold text-gray-800 mb-1 md:mb-2">Hoàn thành bài tập!</h2>
+                <p class="text-lg md:text-xl text-gray-600 mb-4 md:mb-6 font-semibold">Tuyệt vời, <span id="result-name" class="text-blue-600"></span>!</p>
+                
+                <div class="bg-blue-50 border-4 border-blue-100 rounded-3xl p-4 md:p-6 w-full max-w-sm mb-6 shadow-sm flex flex-col items-center shrink-0">
+                    <div class="text-gray-500 font-bold mb-1 text-sm md:text-base">ĐIỂM SỐ CỦA EM</div>
+                    <div class="text-6xl md:text-7xl font-black text-orange-500 mb-2 drop-shadow-md" id="final-score">100</div>
+                    
+                    <div class="w-32 h-32 md:w-40 md:h-40 relative">
+                        <canvas id="resultChart"></canvas>
+                        <div class="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                            <span class="text-xl md:text-2xl font-black text-gray-700" id="chart-ratio">30/30</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 md:gap-4 justify-center shrink-0 pb-4">
+                    <button onclick="app.showReview()" class="bg-white text-blue-700 font-bold py-2 px-4 md:py-3 md:px-6 rounded-2xl border-2 border-blue-200 hover:bg-blue-50 shadow-sm transition text-sm md:text-base">
+                        👀 Xem lại chi tiết
+                    </button>
+                    <button onclick="app.exportCSV()" class="bg-green-100 text-green-700 font-bold py-2 px-4 md:py-3 md:px-6 rounded-2xl border-2 border-green-300 hover:bg-green-200 shadow-sm transition text-sm md:text-base">
+                        📥 Tải báo cáo
+                    </button>
+                    <button onclick="app.clearSaveAndHome()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 md:py-3 md:px-6 rounded-2xl shadow-md transition text-sm md:text-base">
+                        🏠 Trang chủ
+                    </button>
+                </div>
+            </div>
+
+            <!-- SCREEN 4: REVIEW MODE -->
+            <div id="screen-review" class="hidden flex-1 flex flex-col overflow-hidden min-h-0">
+                <div class="p-4 md:p-6 border-b-2 border-gray-200 flex justify-between items-center bg-white shrink-0 shadow-sm z-20">
+                    <h2 class="text-xl md:text-2xl font-black text-blue-800">Chi tiết bài làm</h2>
+                    <div class="flex gap-2">
+                        <button onclick="app.clearSaveAndHome()" class="bg-orange-100 hover:bg-orange-200 text-orange-700 font-bold px-3 py-2 md:px-4 md:py-2 rounded-xl transition text-sm md:text-base">
+                            🏠 Trang chủ
+                        </button>
+                        <button onclick="app.showResult()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-3 py-2 md:px-4 md:py-2 rounded-xl transition text-sm md:text-base">
+                            ✖ Đóng
+                        </button>
+                    </div>
+                </div>
+                <div id="review-list" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-gray-50 pb-20 relative z-10">
+                    <!-- Review items injected here -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- WEB AUDIO API SYNTHESIZER ---
+        const SoundEngine = {
+            ctx: null, bgmOsc: null, bgmGain: null, isBGMPlaying: false,
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+            },
+            
+            playTone(freq, type, duration, vol = 0.1) {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+
+            correct() { this.init(); this.playTone(600, 'sine', 0.1, 0.2); setTimeout(() => this.playTone(800, 'sine', 0.2, 0.2), 100); },
+            wrong() { this.init(); this.playTone(200, 'sawtooth', 0.3, 0.2); },
+            pop() { this.init(); this.playTone(400, 'sine', 0.1, 0.1); },
+            bump() { this.init(); this.playTone(150, 'square', 0.1, 0.1); },
+            ding() { this.init(); this.playTone(1000, 'sine', 0.3, 0.1); },
+            streak() { this.init(); [523, 659, 783, 1046].forEach((f, i) => setTimeout(() => this.playTone(f, 'sine', 0.2, 0.2), i * 100)); },
+            applause() {
+                if(!this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 2;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 2);
+                noise.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+            },
+
+            toggleBGM() {
+                this.init();
+                const btn = document.getElementById('btn-audio');
+                if (this.isBGMPlaying) {
+                    if (this.bgmGain) this.bgmGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.5);
+                    setTimeout(() => { if(this.bgmOsc) this.bgmOsc.stop(); }, 500);
+                    this.isBGMPlaying = false;
+                    btn.innerText = "🔇";
+                } else {
+                    this.bgmOsc = this.ctx.createOscillator();
+                    this.bgmGain = this.ctx.createGain();
+                    this.bgmOsc.type = 'triangle';
+                    
+                    const notes = [261.63, 329.63, 392.00, 523.25];
+                    let now = this.ctx.currentTime;
+                    for(let i=0; i<1000; i++) {
+                        this.bgmOsc.frequency.setValueAtTime(notes[i % notes.length], now + i * 0.5);
+                    }
+                    
+                    this.bgmGain.gain.setValueAtTime(0, this.ctx.currentTime);
+                    this.bgmGain.gain.linearRampToValueAtTime(0.05, this.ctx.currentTime + 2);
+                    
+                    this.bgmOsc.connect(this.bgmGain);
+                    this.bgmGain.connect(this.ctx.destination);
+                    this.bgmOsc.start();
+                    this.isBGMPlaying = true;
+                    btn.innerText = "🔊";
+                }
+            }
+        };
+
+        const app = {
+            // State
+            scriptURL: "https://script.google.com/macros/s/AKfycbwtEQ5__VA--j4tqPXcOSnwEiRW09VOgKQvyoUVUEzWPwLpXM9sA-wXVj8mVYDHNUz6/exec",
+            studentName: "", studentClass: "", selectedSection: "all",
+            currentQuestionIndex: 0, correctCount: 0, currentStreak: 0,
+            drafts: [], evaluations: [], activeQuestions: [], chartInstance: null,
+
+            // Knowledge Base (30 Câu)
+            allQuestions: [
+                // --- PHẦN 1 ---
+                { id: "p1_1", section: "part1", type: "radio", topic: "Tổ chức dữ liệu", question: "Vy muốn lưu bài tập vẽ tranh, cô ấy nên lưu vào đâu?", options: ["A. Trên bàn học", "B. Trong thư mục 'AnhDep' trên ổ D:", "C. Bỏ vào thùng rác"], correctAnswer: "B. Trong thư mục 'AnhDep' trên ổ D:", hint: "Lưu trên máy tính cần bỏ vào thư mục cho gọn gàng.", explanation: "Tệp tin cần được lưu trữ trong các ổ đĩa và thư mục trên máy tính." },
+                { id: "p1_2", section: "part1", type: "tf", topic: "Gửi tệp tin", question: "Bạn cần chọn tệp tin đã lưu trên máy tính trước khi gửi qua email.", options: ["Đúng", "Sai"], correctAnswer: "Đúng", hint: "Muốn gửi thư thì phải có lá thư chứ.", explanation: "Phải chọn đúng tệp tin thì máy tính mới biết cái gì để đính kèm." },
+                { id: "p1_3", section: "part1", type: "dropdown", topic: "Thư mục", question: "Thư mục nằm bên trong một thư mục khác được gọi là _________.", options: ["thư mục con", "thư mục cha", "tệp tin"], correctAnswer: "thư mục con", hint: "Sống trong vòng tay của 'cha' là gì?", explanation: "Thư mục nằm bên trong gọi là thư mục con." },
+                { id: "p1_4", section: "part1", type: "match", topic: "Phân loại", question: "Ghép nối đúng loại đối tượng:", pairs: [{ left: "baiTap1.docx", rightAnswer: "Tệp tin" }, { left: "TinHoc", rightAnswer: "Thư mục" }, { left: "D:", rightAnswer: "Ổ đĩa" }], optionsRight: ["Tệp tin", "Thư mục", "Ổ đĩa"], hint: "Ổ đĩa có dấu : , Tệp tin có đuôi .docx", explanation: "D: là Ổ đĩa, TinHoc là Thư mục, baiTap1.docx là Tệp tin." },
+                { id: "p1_5", section: "part1", type: "text", topic: "Tìm kiếm", question: "Nếu không nhớ tên tệp, gõ từ khóa vào _________ trong thư mục.", options: ["thanh tìm kiếm", "thùng rác", "ổ đĩa C:"], correctAnswer: "thanh tìm kiếm", hint: "Chỗ có hình cái kính lúp.", explanation: "Thanh tìm kiếm giúp lọc tệp tin nhanh chóng." },
+                { id: "p1_6", section: "part1", type: "radio", topic: "Sao chép", question: "Muốn chép tệp 'baiTap1.docx' sang USB, dùng lệnh:", options: ["A. Cut ➔ Paste", "B. Copy ➔ Paste", "C. Xóa"], correctAnswer: "B. Copy ➔ Paste", hint: "Sao chép trong tiếng Anh là Copy.", explanation: "Copy tạo bản sao, Cut là di chuyển." },
+                { id: "p1_7", section: "part1", type: "tf", topic: "Tệp tin", question: "Tệp tin có thể chứa hình ảnh, âm thanh hoặc văn bản.", options: ["Đúng", "Sai"], correctAnswer: "Đúng", hint: "Ảnh JPG hay nhạc MP3 đều là tệp.", explanation: "Tệp tin rất đa dạng về định dạng." },
+                { id: "p1_8", section: "part1", type: "checkbox", topic: "Thao tác", question: "Các thao tác có thể làm với tệp tin (Chọn nhiều):", options: ["A. Tạo mới", "B. Đổi tên", "C. Nướng tệp tin", "D. Xóa"], correctAnswer: ["A. Tạo mới", "B. Đổi tên", "D. Xóa"], hint: "Không thể cho tệp tin vào lò vi sóng được.", explanation: "Nướng là hành động vật lý không áp dụng cho máy tính." },
+                { id: "p1_9", section: "part1", type: "order", topic: "Tìm tệp", question: "Sắp xếp trình tự tìm và mở tệp:", steps: ["Mở thư mục", "Gõ tên vào thanh tìm kiếm", "Chọn tệp đúng", "Mở tệp"], correctAnswer: "0-1-2-3", hint: "Vào phòng -> Tìm đồ -> Cầm lên -> Mở ra.", explanation: "Phải mở thư mục chứa trước rồi mới tìm kiếm." },
+                { id: "p1_10", section: "part1", type: "tf", topic: "Gửi bài", question: "Bạn có thể gửi bài tập qua email mà không cần lưu tệp tin.", options: ["Đúng", "Sai"], correctAnswer: "Sai", hint: "Máy tính không đọc được suy nghĩ của em đâu.", explanation: "Bài phải lưu thành tệp thì mới đính kèm được." },
+                
+                // --- PHẦN 2 ---
+                { id: "p2_11", section: "part2", type: "radio", topic: "Thông tin cá nhân", question: "Thông tin cá nhân gồm:", options: ["A. Họ tên, SĐT, địa chỉ", "B. Bài giảng, đề thi", "C. Tin tức"], correctAnswer: "A. Họ tên, SĐT, địa chỉ", hint: "Là những thứ riêng tư của nhà em.", explanation: "Cần bảo mật họ tên, địa chỉ, SĐT." },
+                { id: "p2_12", section: "part2", type: "tf", topic: "Bảo mật", question: "Có thể chia sẻ mật khẩu máy tính cho bạn bè.", options: ["Đúng", "Sai"], correctAnswer: "Sai", hint: "Mật khẩu giống như chìa khóa nhà.", explanation: "Tuyệt đối không chia sẻ mật khẩu cho ai." },
+                { id: "p2_13", section: "part2", type: "dropdown", topic: "Xử lý tình huống", question: "Nhận tin nhắn lạ xin mật khẩu ➔ thì _________.", options: ["báo giáo viên", "gửi cho họ", "trả lời lại"], correctAnswer: "báo giáo viên", hint: "Cần nhờ người lớn xử lý giúp.", explanation: "Báo người lớn để có hướng xử lý an toàn." },
+                { id: "p2_14", section: "part2", type: "text", topic: "Mạng xã hội", question: "Để bảo vệ gia đình, nên _________ trước khi đăng ảnh cả nhà.", options: ["xin phép", "tự ý đăng", "xóa ảnh"], correctAnswer: "xin phép", hint: "Hỏi ý kiến người khác trước khi dùng hình của họ.", explanation: "Cần sự đồng ý để tôn trọng quyền riêng tư." },
+                { id: "p2_15", section: "part2", type: "radio", topic: "Mật khẩu", question: "Mật khẩu mạnh nên có:", options: ["A. Chữ, số và ký tự đặc biệt", "B. Chỉ chữ thường", "C. Ngày sinh"], correctAnswer: "A. Chữ, số và ký tự đặc biệt", hint: "Càng rối rắm hacker càng khó đoán.", explanation: "Mật khẩu kết hợp nhiều loại ký tự sẽ rất an toàn." },
+                { id: "p2_16", section: "part2", type: "dropdown", topic: "Đánh giá", question: "Việc chia sẻ mật khẩu cho bạn bè và tự ý đăng ảnh mà chưa xin phép là những hành động ________.", options: ["Đúng", "Sai"], correctAnswer: "Sai", hint: "Việc nào làm lộ thông tin là Sai.", explanation: "Đây là những hành động Sai vì gây mất an toàn và vi phạm quyền riêng tư." },
+                { id: "p2_17", section: "part2", type: "tf", topic: "Email rác", question: "Nên xóa email quảng cáo/không xác thực để bảo vệ máy.", options: ["Đúng", "Sai"], correctAnswer: "Đúng", hint: "Thư rác thường chứa virus.", explanation: "Xóa thư rác giúp tránh click nhầm link độc hại." },
+                { id: "p2_18", section: "part2", type: "checkbox", topic: "An toàn mạng", question: "Cách bảo vệ thông tin (Chọn nhiều):", options: ["A. Đặt mật khẩu mạnh", "B. Không share cho người lạ", "C. Tải app bừa bãi", "D. Xin phép trước khi đăng ảnh"], correctAnswer: ["A. Đặt mật khẩu mạnh", "B. Không share cho người lạ", "D. Xin phép trước khi đăng ảnh"], hint: "Tải app lung tung là rước virus về.", explanation: "Không được tải phần mềm không rõ nguồn gốc." },
+                { id: "p2_19", section: "part2", type: "dropdown", topic: "Cấu trúc thư mục", question: "Thư mục chứa các tệp và thư mục khác gọi là _________.", options: ["thư mục cha", "thư mục con", "tệp tin"], correctAnswer: "thư mục cha", hint: "Người bao bọc, che chở bên ngoài.", explanation: "Thư mục bao ngoài gọi là thư mục cha." },
+                { id: "p2_20", section: "part2", type: "tf", topic: "Sử dụng USB", question: "Mở tệp từ USB không cần quét virus cho nhanh.", options: ["Đúng", "Sai"], correctAnswer: "Sai", hint: "Nhanh một giây, hỏng cả máy.", explanation: "USB là nguồn lây virus chính, luôn phải quét." },
+
+                // --- PHẦN 3 ---
+                { id: "p3_21", section: "part3", type: "order", topic: "PowerPoint", question: "Sắp xếp bước tạo bài thuyết trình:", steps: ["Mở PowerPoint", "Tạo slide mới", "Viết nội dung", "Chèn hình ảnh", "Lưu tệp"], correctAnswer: "0-1-2-3-4", hint: "Mở app -> Tạo giấy trắng -> Viết chữ -> Trang trí -> Cất đi.", explanation: "Quy trình chuẩn để không mất dữ liệu." },
+                { id: "p3_22", section: "part3", type: "order", topic: "Viết báo cáo", question: "Sắp xếp công việc làm báo cáo:", steps: ["Thu thập dữ liệu", "Viết nội dung", "Tạo bảng/hình", "Kiểm tra lỗi"], correctAnswer: "0-1-2-3", hint: "Phải có nguyên liệu (dữ liệu) mới bắt đầu nấu ăn được.", explanation: "Thu thập thông tin luôn là bước đầu tiên." },
+                { id: "p3_23", section: "part3", type: "checkbox", topic: "Kỹ năng làm việc", question: "Để làm việc lớn thành công, nên (Chọn nhiều):", options: ["A. Làm từng phần nhỏ", "B. Làm tất cả cùng lúc", "C. Ghi chú tiến trình", "D. Nhờ bạn làm hộ"], correctAnswer: ["A. Làm từng phần nhỏ", "C. Ghi chú tiến trình"], hint: "Chia nhỏ ra cho dễ nuốt.", explanation: "Chia nhỏ nhiệm vụ và ghi chú giúp quản lý tốt hơn." },
+                { id: "p3_24", section: "part3", type: "text", topic: "Xử lý sự cố", question: "Nếu máy không mở được app ➔ thì _________ lại máy.", options: ["khởi động", "rút điện", "để đó"], correctAnswer: "khởi động", hint: "Tắt đi bật lại gọi là gì?", explanation: "Khởi động lại (Restart) sửa được hầu hết lỗi treo app." },
+                { id: "p3_25", section: "part3", type: "radio", topic: "Trao đổi", question: "Gửi báo cáo nhanh nhất bằng cách:", options: ["A. Chép USB mang đi", "B. Gửi qua email", "C. Viết tay"], correctAnswer: "B. Gửi qua email", hint: "Internet có tốc độ ánh sáng.", explanation: "Email gửi đi ngay lập tức không cần di chuyển." },
+                { id: "p3_26", section: "part3", type: "tf", topic: "Kế hoạch", question: "Nên lập kế hoạch, chia nhỏ nhiệm vụ để làm bài hiệu quả.", options: ["Đúng", "Sai"], correctAnswer: "Đúng", hint: "Giống như ăn quả dưa hấu, phải cắt thành từng miếng.", explanation: "Lập kế hoạch giúp không bị sót việc." },
+                { id: "p3_27", section: "part3", type: "match", topic: "Nếu - Thì", question: "Nối Nếu - Thì:", pairs: [{ left: "Nếu hết pin", rightAnswer: "Cắm sạc" }, { left: "Nếu chưa lưu", rightAnswer: "Lưu ngay" }, { left: "Không thấy tệp", rightAnswer: "Tìm kiếm" }], optionsRight: ["Cắm sạc", "Lưu ngay", "Tìm kiếm"], hint: "Tương ứng vấn đề và cách giải quyết.", explanation: "Tư duy logic giải quyết vấn đề." },
+                { id: "p3_28", section: "part3", type: "dropdown", topic: "Công cụ", question: "Để không quên bước nào, nên __________ các bước.", options: ["ghi chú", "bỏ qua", "nhớ trong đầu"], correctAnswer: "ghi chú", hint: "Viết ra giấy hoặc sổ gọi là gì?", explanation: "Ghi chú (Note) giúp theo dõi tiến độ." },
+                { id: "p3_29", section: "part3", type: "order", topic: "Quy trình", question: "Trình tự làm bài tập:", steps: ["Tìm thông tin", "Viết nội dung", "Vẽ hình", "Lưu và nộp"], correctAnswer: "0-1-2-3", hint: "Có chữ rồi mới có hình minh họa cho chữ đó.", explanation: "Chuẩn bị -> Thực thi -> Hoàn thiện -> Nộp." },
+                { id: "p3_30", section: "part3", type: "tf", topic: "Bảo mật", question: "Mở tệp trên USB không kiểm tra để tiết kiệm thời gian.", options: ["Đúng", "Sai"], correctAnswer: "Sai", hint: "Tiết kiệm 5 giây nhưng hỏng cả cái máy tính.", explanation: "Luôn phải quét virus USB." }
+            ],
+
+            // Utils & Setup
+            init() {
+                this.loadSave();
+                document.getElementById('studentName').value = this.studentName;
+                document.getElementById('studentClass').value = this.studentClass;
+                if(this.currentQuestionIndex > 0) {
+                    document.getElementById('saved-session-alert').classList.remove('hidden');
+                }
+            },
+
+            loadSave() {
+                const saved = localStorage.getItem('tinHoc3Save');
+                if(saved) {
+                    const data = JSON.parse(saved);
+                    this.studentName = data.studentName;
+                    this.studentClass = data.studentClass;
+                    this.selectedSection = data.selectedSection;
+                    this.currentQuestionIndex = data.currentQuestionIndex;
+                    this.correctCount = data.correctCount || 0;
+                    this.currentStreak = data.currentStreak || 0;
+                    this.drafts = data.drafts || [];
+                    this.evaluations = data.evaluations || [];
+                }
+            },
+
+            saveProgress() {
+                const data = {
+                    studentName: this.studentName, studentClass: this.studentClass,
+                    selectedSection: this.selectedSection, currentQuestionIndex: this.currentQuestionIndex,
+                    correctCount: this.correctCount, currentStreak: this.currentStreak,
+                    drafts: this.drafts, evaluations: this.evaluations
+                };
+                localStorage.setItem('tinHoc3Save', JSON.stringify(data));
+            },
+
+            clearSaveAndHome() {
+                localStorage.removeItem('tinHoc3Save');
+                location.reload();
+            },
+
+            resumeQuiz() {
+                this.prepareQuestions();
+                this.showScreen('quiz');
+                this.renderQuestion();
+            },
+
+            startQuiz(isResume) {
+                SoundEngine.init();
+                if(!isResume) {
+                    const name = document.getElementById('studentName').value.trim();
+                    const cls = document.getElementById('studentClass').value.trim();
+                    if(!name || !cls) return alert("Em nhập tên và lớp nhé!");
+                    this.studentName = name; this.studentClass = cls;
+                    this.selectedSection = document.getElementById('sectionSelect').value;
+                    this.currentQuestionIndex = 0; this.correctCount = 0; this.currentStreak = 0;
+                    localStorage.removeItem('tinHoc3Save');
+                }
+                this.prepareQuestions();
+                
+                // Khởi tạo mảng Nháp & Kết quả
+                if(!isResume) {
+                    this.drafts = new Array(this.activeQuestions.length).fill(null);
+                    this.evaluations = new Array(this.activeQuestions.length).fill(null);
+                }
+
+                this.showScreen('quiz');
+                this.renderQuestion();
+            },
+
+            prepareQuestions() {
+                this.activeQuestions = this.selectedSection === 'all' 
+                    ? [...this.allQuestions] 
+                    : this.allQuestions.filter(q => q.section === this.selectedSection);
+                
+                document.getElementById('display-name').innerText = `${this.studentName} - ${this.studentClass}`;
+                document.getElementById('total-questions-num').innerText = this.activeQuestions.length;
+            },
+
+            showScreen(id) {
+                ['screen-home', 'screen-quiz', 'screen-result', 'screen-review'].forEach(s => {
+                    const el = document.getElementById(s);
+                    if (el) el.classList.add('hidden');
+                });
+                
+                const targetId = id.startsWith('screen-') ? id : `screen-${id}`;
+                const el = document.getElementById(targetId);
+                
+                if (el) {
+                    el.classList.remove('hidden');
+                    el.classList.remove('animate-pop'); 
+                    void el.offsetWidth; 
+                    el.classList.add('animate-pop');
+                }
+            },
+
+            toggleBGM() { SoundEngine.toggleBGM(); },
+            toggleHint() { document.getElementById('hint-box').classList.toggle('hidden'); SoundEngine.pop(); },
+            showHelp() { 
+                const box = document.getElementById('help-box');
+                const q = this.activeQuestions[this.currentQuestionIndex];
+                let msg = "";
+                if(q.type==='radio') msg = "Chạm vào ô chứa đáp án đúng nhất.";
+                if(q.type==='checkbox') msg = "Chạm vào CÁC ô đáp án đúng (có thể chọn nhiều).";
+                if(q.type==='tf') msg = "Đọc kỹ câu hỏi và chọn Đúng hoặc Sai.";
+                if(q.type==='text') msg = "Chạm vào từ gợi ý màu cam hoặc tự gõ vào ô trống.";
+                if(q.type==='dropdown') msg = "Chạm vào ô trống để thả xuống danh sách và chọn một đáp án.";
+                if(q.type==='order') msg = "Chạm vào 2 mục để đổi chỗ cho nhau sao cho đúng thứ tự từ trên xuống.";
+                if(q.type==='match') msg = "Chạm vào 1 mục ở cột trái, sau đó chạm vào mục tương ứng ở cột phải để nối.";
+                box.innerText = "👉 Cách làm: " + msg;
+                box.classList.remove('hidden');
+                SoundEngine.pop();
+            },
+
+            // Đọc UI hiện tại để lưu Nháp trước khi chuyển câu
+            saveDraft() {
+                const q = this.activeQuestions[this.currentQuestionIndex];
+                const area = document.getElementById('answer-area');
+                if (!area) return;
+                
+                let draft = null;
+                if (q.type === 'radio' || q.type === 'tf') {
+                    const sel = area.querySelector('input:checked');
+                    if (sel) draft = sel.value;
+                } else if (q.type === 'checkbox') {
+                    draft = Array.from(area.querySelectorAll('input:checked')).map(n=>n.value);
+                } else if (q.type === 'text') {
+                    const input = document.getElementById('q_text_input');
+                    if (input) draft = input.value.trim();
+                } else if (q.type === 'dropdown') {
+                    const select = area.querySelector('select');
+                    if (select && select.value) draft = select.value;
+                } else if (q.type === 'order') {
+                    const items = Array.from(area.querySelectorAll('.order-item'));
+                    if (items.length) draft = items.map(el => el.dataset.val);
+                } else if (q.type === 'match') {
+                    const lefts = area.querySelectorAll('.l-item');
+                    draft = {};
+                    lefts.forEach(l => {
+                        if (l.dataset.ans) draft[l.dataset.id] = l.dataset.ans;
+                    });
+                }
+                this.drafts[this.currentQuestionIndex] = draft;
+            },
+
+            renderQuestion() {
+                const q = this.activeQuestions[this.currentQuestionIndex];
+                document.getElementById('current-question-num').innerText = this.currentQuestionIndex + 1;
+                document.getElementById('progress-bar').style.width = `${(this.currentQuestionIndex / this.activeQuestions.length) * 100}%`;
+                
+                // UI Updates
+                const qArea = document.getElementById('screen-quiz');
+                qArea.className = `hidden flex-1 flex flex-col transition-colors duration-500 bg-type-${q.type}`;
+                qArea.classList.remove('hidden');
+
+                document.getElementById('topic-badge').innerText = q.topic;
+                document.getElementById('type-text').innerText = 
+                    q.type==='radio'?'1 Đáp án': q.type==='checkbox'?'Nhiều đáp án': q.type==='tf'?'Đúng/Sai': q.type==='text'?'Điền từ': q.type==='dropdown'?'Chọn từ': 'Kéo thả / Nối';
+                document.getElementById('type-icon').innerText = 
+                    q.type==='radio'?'🔘': q.type==='checkbox'?'☑️': q.type==='tf'?'⚖️': q.type==='text'?'✍️': q.type==='dropdown'?'🔽': '🔄';
+
+                document.getElementById('question-text').innerHTML = q.question;
+                document.getElementById('hint-text').innerText = q.hint;
+                document.getElementById('hint-box').classList.add('hidden');
+                document.getElementById('help-box').classList.add('hidden');
+                
+                const area = document.getElementById('answer-area');
+                area.innerHTML = '';
+                area.dataset.qtype = q.type;
+
+                const draft = this.drafts[this.currentQuestionIndex];
+
+                // --- BUILD UI BASED ON TYPE AND APPLY DRAFT ---
+                if (q.type === 'radio' || q.type === 'tf') {
+                    q.options.forEach(opt => {
+                        const label = document.createElement('label');
+                        label.className = "option-label block border-2 border-white rounded-2xl p-4 cursor-pointer bg-white/80 backdrop-blur text-lg font-bold text-gray-700 flex items-center gap-3 shadow-sm";
+                        if (draft === opt) label.classList.add('selected');
+                        
+                        const input = document.createElement('input'); 
+                        input.type = "radio"; input.name = "q_opt"; input.value = opt; input.className="w-6 h-6";
+                        if (draft === opt) input.checked = true;
+
+                        label.onclick = () => {
+                            area.querySelectorAll('.option-label').forEach(l => l.classList.remove('selected'));
+                            label.classList.add('selected'); label.querySelector('input').checked = true; SoundEngine.pop();
+                            this.saveDraft();
+                        };
+                        label.append(input, opt); area.append(label);
+                    });
+                } 
+                else if (q.type === 'checkbox') {
+                    const draftArr = draft || [];
+                    q.options.forEach(opt => {
+                        const label = document.createElement('label');
+                        label.className = "option-label block border-2 border-white rounded-2xl p-4 cursor-pointer bg-white/80 text-lg font-bold text-gray-700 flex items-center gap-3 shadow-sm";
+                        if (draftArr.includes(opt)) label.classList.add('selected');
+
+                        const input = document.createElement('input'); 
+                        input.type = "checkbox"; input.value = opt;
+                        if (draftArr.includes(opt)) input.checked = true;
+
+                        label.onclick = (e) => {
+                            if(e.target !== input) input.checked = !input.checked;
+                            input.checked ? label.classList.add('selected') : label.classList.remove('selected');
+                            SoundEngine.pop();
+                            this.saveDraft();
+                        };
+                        label.append(input, opt); area.append(label);
+                    });
+                }
+                else if (q.type === 'dropdown') {
+                    const select = document.createElement('select');
+                    select.className = "w-full text-xl font-bold text-purple-800 bg-white border-4 border-purple-200 rounded-2xl p-5 outline-none focus:border-purple-500 shadow-inner transition-all appearance-none cursor-pointer";
+                    select.style.backgroundImage = "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a855f7' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")";
+                    select.style.backgroundRepeat = "no-repeat";
+                    select.style.backgroundPosition = "right 1rem center";
+                    select.style.backgroundSize = "1.5em";
+                    
+                    const defaultOpt = document.createElement('option');
+                    defaultOpt.value = "";
+                    defaultOpt.innerText = "-- Chạm vào để chọn đáp án --";
+                    defaultOpt.disabled = true;
+                    defaultOpt.selected = !draft;
+                    select.appendChild(defaultOpt);
+
+                    q.options.forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt;
+                        option.innerText = opt;
+                        if (draft === opt) option.selected = true;
+                        select.appendChild(option);
+                    });
+
+                    select.onchange = () => {
+                        SoundEngine.pop();
+                        this.saveDraft();
+                    };
+
+                    area.append(select);
+                }
+                else if (q.type === 'text') {
+                    const inputContainer = document.createElement('div');
+                    inputContainer.className = "w-full flex flex-col gap-4";
+
+                    const wordBank = document.createElement('div');
+                    wordBank.className = "flex flex-wrap gap-3 justify-center bg-white/60 p-4 rounded-2xl border-2 border-orange-100 shadow-sm";
+                    const wordBankLabel = document.createElement('div');
+                    wordBankLabel.className = "w-full text-center text-orange-600 font-bold text-sm uppercase mb-1";
+                    wordBankLabel.innerText = "Các từ gợi ý (Chạm để điền):";
+                    wordBank.appendChild(wordBankLabel);
+
+                    if (q.options && q.options.length > 0) {
+                        let shuffled = [...q.options].sort(() => Math.random() - 0.5);
+                        shuffled.forEach(opt => {
+                            const btn = document.createElement('button');
+                            btn.className = "bg-white hover:bg-orange-100 text-orange-700 font-extrabold py-2 px-5 rounded-xl border-2 border-orange-300 transition shadow-sm transform hover:scale-105";
+                            btn.innerText = opt;
+                            btn.onclick = () => {
+                                document.getElementById('q_text_input').value = opt;
+                                SoundEngine.pop();
+                                document.getElementById('q_text_input').classList.add('ring-4', 'ring-orange-300');
+                                setTimeout(() => document.getElementById('q_text_input').classList.remove('ring-4', 'ring-orange-300'), 200);
+                                this.saveDraft();
+                            };
+                            wordBank.appendChild(btn);
+                        });
+                    }
+
+                    const input = document.createElement('input');
+                    input.type = "text"; input.id = "q_text_input"; input.placeholder = "Chạm từ ở trên hoặc gõ vào đây...";
+                    input.value = draft || "";
+                    input.className = "text-input w-full text-xl font-bold text-blue-800 bg-white border-4 border-orange-200 rounded-2xl p-5 outline-none focus:border-orange-500 shadow-inner transition-all";
+                    input.oninput = () => this.saveDraft();
+
+                    inputContainer.appendChild(wordBank);
+                    inputContainer.appendChild(input);
+                    area.append(inputContainer);
+                }
+                else if (q.type === 'order') {
+                    let items = (draft && draft.length) ? draft : [...q.steps].sort(() => Math.random() - 0.5);
+                    this.reRenderOrder(items, area);
+                }
+                else if (q.type === 'match') {
+                    const matchDraft = draft || {};
+                    let leftSelected = null;
+                    let rightItems = [...q.optionsRight].sort(() => Math.random() - 0.5);
+                    
+                    const grid = document.createElement('div'); grid.className = "flex gap-2 h-full";
+                    const colL = document.createElement('div'); colL.className = "flex-1 flex flex-col gap-2";
+                    const colR = document.createElement('div'); colR.className = "flex-1 flex flex-col gap-2";
+                    
+                    q.pairs.forEach((p, i) => {
+                        const lDiv = document.createElement('div'); lDiv.className="tap-item l-item bg-blue-50 border-2 border-blue-200 p-3 rounded-xl font-bold flex-1 flex items-center justify-center text-center";
+                        lDiv.innerText = p.left; lDiv.dataset.id = i;
+                        
+                        const ans = matchDraft[i];
+                        if (ans) {
+                            lDiv.innerHTML += `<div class="text-xs text-green-600 mt-1 border-t border-green-200 pt-1">➔ ${ans}</div>`;
+                            lDiv.dataset.ans = ans;
+                            lDiv.classList.add('matched');
+                        }
+
+                        lDiv.onclick = () => {
+                            if(lDiv.classList.contains('matched')) return;
+                            SoundEngine.pop();
+                            area.querySelectorAll('.l-item').forEach(el=>el.classList.remove('active'));
+                            lDiv.classList.add('active'); leftSelected = lDiv;
+                        };
+                        colL.append(lDiv);
+                    });
+
+                    rightItems.forEach((rText, i) => {
+                        const rDiv = document.createElement('div'); rDiv.className="tap-item r-item bg-green-50 border-2 border-green-200 p-3 rounded-xl font-bold flex-1 flex items-center justify-center text-center";
+                        rDiv.innerText = rText; rDiv.dataset.text = rText;
+                        
+                        if (Object.values(matchDraft).includes(rText)) {
+                            rDiv.classList.add('matched');
+                        }
+
+                        rDiv.onclick = () => {
+                            if(rDiv.classList.contains('matched') || !leftSelected) return;
+                            SoundEngine.bump();
+                            leftSelected.innerHTML += `<div class="text-xs text-green-600 mt-1 border-t border-green-200 pt-1">➔ ${rText}</div>`;
+                            leftSelected.dataset.ans = rText;
+                            leftSelected.classList.remove('active'); leftSelected.classList.add('matched');
+                            rDiv.classList.add('matched');
+                            leftSelected = null;
+                            this.saveDraft();
+                        };
+                        colR.append(rDiv);
+                    });
+
+                    grid.append(colL, colR);
+                    area.append(grid);
+                    
+                    const resetBtn = document.createElement('button'); resetBtn.className="mt-2 text-red-500 font-bold text-sm underline text-center w-full"; resetBtn.innerText="Làm lại ghép nối câu này";
+                    resetBtn.onclick = () => {
+                        this.drafts[this.currentQuestionIndex] = null;
+                        this.renderQuestion();
+                    };
+                    area.append(resetBtn);
+                }
+
+                // --- XỬ LÝ TRẠNG THÁI ĐÃ KIỂM TRA (ĐÃ ĐÁNH GIÁ) ---
+                const evalData = this.evaluations[this.currentQuestionIndex];
+                const btnCheck = document.getElementById('btn-check');
+                const fbArea = document.getElementById('feedback-area');
+                
+                if (evalData) {
+                    area.querySelectorAll('input, select, button, .tap-item, .option-label').forEach(el => el.classList.add('disabled'));
+                    btnCheck.classList.add('hidden');
+                    fbArea.classList.remove('hidden', 'bg-red-50', 'bg-green-50', 'text-red-700', 'text-green-700', 'border-red-300', 'border-green-300');
+                    
+                    if(evalData.ok) {
+                        fbArea.classList.add('bg-green-50', 'text-green-700', 'border-green-300');
+                        document.getElementById('feedback-icon').innerText = "🎉";
+                        document.getElementById('feedback-text').innerHTML = `<b>Chính xác!</b> ${evalData.exp}`;
+                    } else {
+                        fbArea.classList.add('bg-red-50', 'text-red-700', 'border-red-300');
+                        document.getElementById('feedback-icon').innerText = "💡";
+                        document.getElementById('feedback-text').innerHTML = `<b>Chưa đúng.</b> ${evalData.exp}`;
+                        
+                        if (q.type === 'text') {
+                            document.getElementById('q_text_input').value = `Đúng: ${q.correctAnswer}`;
+                            document.getElementById('q_text_input').classList.add('text-red-600', 'border-red-400');
+                        }
+                    }
+
+                    if(q.type==='radio' || q.type==='checkbox') {
+                        area.querySelectorAll('.option-label').forEach(l => {
+                            const v = l.querySelector('input').value;
+                            if(l.classList.contains('selected') && !evalData.ok) l.classList.add('wrong');
+                            if((q.type==='radio' && v===q.correctAnswer) || (q.type==='checkbox' && q.correctAnswer.includes(v))) {
+                                l.classList.add('correct');
+                            }
+                        });
+                    }
+                } else {
+                    btnCheck.classList.remove('hidden');
+                    fbArea.classList.add('hidden');
+                }
+
+                // --- XỬ LÝ NÚT ĐIỀU HƯỚNG ---
+                document.getElementById('btn-prev').classList.toggle('hidden', this.currentQuestionIndex === 0);
+                
+                // Luôn hiện nút nộp bài
+                document.getElementById('btn-submit').classList.remove('hidden');
+                
+                if (this.currentQuestionIndex === this.activeQuestions.length - 1) {
+                    document.getElementById('btn-next').classList.add('hidden');
+                } else {
+                    document.getElementById('btn-next').classList.remove('hidden');
+                }
+            },
+
+            reRenderOrder(items, container = null) {
+                const q = this.activeQuestions[this.currentQuestionIndex];
+                const area = container || document.getElementById('answer-area');
+                area.innerHTML = '';
+                let selectedIdx = null;
+                items.forEach((item, idx) => {
+                    const div = document.createElement('div');
+                    div.className = "tap-item order-item bg-white p-4 rounded-xl border-2 border-gray-200 font-bold text-gray-700 flex items-center gap-4 shadow-sm";
+                    div.dataset.val = item;
+                    div.innerHTML = `<div class="bg-yellow-400 text-white w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow">${idx+1}</div> <div>${item}</div>`;
+                    div.onclick = () => {
+                        SoundEngine.pop();
+                        if(selectedIdx === null) { selectedIdx = idx; div.classList.add('active'); }
+                        else { 
+                            let temp = items[selectedIdx]; items[selectedIdx] = items[idx]; items[idx] = temp; 
+                            this.reRenderOrder(items, area);
+                            this.saveDraft();
+                        }
+                    };
+                    area.append(div);
+                });
+            },
+
+            // Navigation Flow Functions
+            prevQuestion() {
+                this.saveDraft();
+                SoundEngine.pop();
+                this.currentQuestionIndex--;
+                this.renderQuestion();
+                this.saveProgress();
+            },
+
+            nextQuestion() {
+                this.saveDraft();
+                SoundEngine.ding();
+                this.currentQuestionIndex++;
+                this.renderQuestion();
+                this.saveProgress();
+            },
+
+            checkAnswer() {
+                // Kiểm tra trực tiếp tại câu - sẽ chốt đáp án ngay lập tức
+                if (this.evaluations[this.currentQuestionIndex]) return; 
+                
+                this.saveDraft();
+                const draft = this.drafts[this.currentQuestionIndex];
+                const q = this.activeQuestions[this.currentQuestionIndex];
+                
+                let userDisp = "", corrDisp = "", isCorrect = false;
+
+                if (q.type === 'radio' || q.type === 'tf') {
+                    if(!draft) return alert("Em chọn một đáp án nhé!");
+                    userDisp = draft; corrDisp = q.correctAnswer;
+                    isCorrect = (draft === corrDisp);
+                } 
+                else if (q.type === 'checkbox') {
+                    if(!draft || !draft.length) return alert("Chọn ít nhất 1 đáp án!");
+                    userDisp = draft.join(" | "); corrDisp = q.correctAnswer.join(" | ");
+                    isCorrect = draft.length === q.correctAnswer.length && draft.slice().sort().every((v,i) => v === [...q.correctAnswer].sort()[i]);
+                }
+                else if (q.type === 'text') {
+                    if(!draft) return alert("Em gõ hoặc chọn từ gợi ý vào ô nhé!");
+                    userDisp = draft; corrDisp = q.correctAnswer;
+                    isCorrect = (draft.toLowerCase() === q.correctAnswer.toLowerCase());
+                }
+                else if (q.type === 'dropdown') {
+                    if(!draft) return alert("Em hãy chạm vào ô để chọn một đáp án trong danh sách nhé!");
+                    userDisp = draft; corrDisp = q.correctAnswer;
+                    isCorrect = (draft === corrDisp);
+                }
+                else if (q.type === 'order') {
+                    if(!draft || draft.length === 0) return; 
+                    userDisp = draft.join(" ➔ "); corrDisp = q.steps.join(" ➔ ");
+                    isCorrect = (draft.join("|") === q.steps.join("|"));
+                }
+                else if (q.type === 'match') {
+                    if(!draft || Object.keys(draft).length < q.pairs.length) return alert("Em hãy ghép nối tất cả các cặp nhé!");
+                    let uArr = [], cArr = [];
+                    let wrongMatch = false;
+                    q.pairs.forEach((p, id) => {
+                        const ans = draft[id];
+                        uArr.push(`${p.left} ➔ ${ans||'?'}`);
+                        cArr.push(`${p.left} ➔ ${p.rightAnswer}`);
+                        if(ans !== p.rightAnswer) wrongMatch = true;
+                    });
+                    userDisp = uArr.join('<br>'); corrDisp = cArr.join('<br>');
+                    isCorrect = !wrongMatch;
+                }
+
+                // Lưu Kết Quả
+                this.evaluations[this.currentQuestionIndex] = {
+                    q: q.question, u: userDisp, c: corrDisp, ok: isCorrect, exp: q.explanation
+                };
+
+                if(isCorrect) {
+                    this.correctCount++;
+                    this.currentStreak++;
+                    SoundEngine.correct();
+                    if(this.currentStreak > 1 && this.currentStreak % 3 === 0) {
+                        const toast = document.getElementById('streak-toast');
+                        document.getElementById('streak-text').innerText = `${this.currentStreak} câu liên tiếp!`;
+                        toast.classList.remove('hidden'); toast.classList.add('streak-animate');
+                        SoundEngine.streak();
+                        setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('streak-animate'); }, 3000);
+                    }
+                } else {
+                    this.currentStreak = 0;
+                    SoundEngine.wrong();
+                }
+
+                this.renderQuestion();
+                this.saveProgress();
+            },
+
+            // Chấm điểm ngầm cho các câu bị bỏ qua (Skip)
+            evaluateSilently(index) {
+                const q = this.activeQuestions[index];
+                const draft = this.drafts[index];
+                let userDisp = "", corrDisp = "", isCorrect = false;
+
+                if (q.type === 'radio' || q.type === 'tf') {
+                    userDisp = draft || "Chưa làm"; 
+                    corrDisp = q.correctAnswer;
+                    isCorrect = (draft === corrDisp);
+                } else if (q.type === 'checkbox') {
+                    userDisp = (draft && draft.length) ? draft.join(" | ") : "Chưa làm"; 
+                    corrDisp = q.correctAnswer.join(" | ");
+                    isCorrect = draft && draft.length === q.correctAnswer.length && draft.slice().sort().every((v,i) => v === [...q.correctAnswer].sort()[i]);
+                } else if (q.type === 'text') {
+                    userDisp = draft || "Chưa làm"; 
+                    corrDisp = q.correctAnswer;
+                    isCorrect = draft && (draft.toLowerCase() === q.correctAnswer.toLowerCase());
+                } else if (q.type === 'dropdown') {
+                    userDisp = draft || "Chưa làm"; 
+                    corrDisp = q.correctAnswer;
+                    isCorrect = (draft === corrDisp);
+                } else if (q.type === 'order') {
+                    userDisp = (draft && draft.length) ? draft.join(" ➔ ") : "Chưa làm"; 
+                    corrDisp = q.steps.join(" ➔ ");
+                    isCorrect = draft && (draft.join("|") === q.steps.join("|"));
+                } else if (q.type === 'match') {
+                    let uArr = [], cArr = [];
+                    let wrongMatch = false;
+                    let answeredCount = 0;
+                    q.pairs.forEach((p, id) => {
+                        const ans = draft ? draft[id] : null;
+                        uArr.push(`${p.left} ➔ ${ans||'?'}`);
+                        cArr.push(`${p.left} ➔ ${p.rightAnswer}`);
+                        if(ans !== p.rightAnswer) wrongMatch = true;
+                        if(ans) answeredCount++;
+                    });
+                    userDisp = answeredCount > 0 ? uArr.join('<br>') : "Chưa làm"; 
+                    corrDisp = cArr.join('<br>');
+                    isCorrect = answeredCount === q.pairs.length && !wrongMatch;
+                }
+
+                if (isCorrect) this.correctCount++;
+                
+                this.evaluations[index] = {
+                    q: q.question, u: userDisp, c: corrDisp, ok: isCorrect, exp: q.explanation
+                };
+            },
+
+            submitQuiz() {
+                this.saveDraft();
+                
+                // Chấm điểm bất kỳ câu nào học sinh chỉ làm (nháp) nhưng quên ấn Kiểm tra, hoặc bỏ trống
+                for(let i = 0; i < this.activeQuestions.length; i++) {
+                    if(!this.evaluations[i]) {
+                        this.evaluateSilently(i);
+                    }
+                }
+                this.finishQuiz();
+            },
+
+            finishQuiz() {
+                SoundEngine.applause();
+                const total = this.activeQuestions.length;
+                const score = Math.round((this.correctCount / total) * 100);
+                
+                document.getElementById('result-name').innerText = this.studentName;
+                document.getElementById('final-score').innerText = score;
+                document.getElementById('chart-ratio').innerText = `${this.correctCount}/${total}`;
+
+                const emoji = score === 100 ? "🏆" : (score >= 50 ? "🌟" : "💪");
+                document.getElementById('result-emoji').innerText = emoji;
+
+                this.showScreen('result');
+                this.drawChart(this.correctCount, total - this.correctCount);
+                localStorage.removeItem('tinHoc3Save');
+                
+                // Gửi dữ liệu về Google Sheets
+                this.submitData(score, total);
+            },
+
+            drawChart(correct, wrong) {
+                const ctx = document.getElementById('resultChart').getContext('2d');
+                if(this.chartInstance) this.chartInstance.destroy();
+                this.chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: ['Đúng', 'Sai'], datasets: [{ data: [correct, wrong], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 0 }] },
+                    options: { responsive: true, cutout: '75%', plugins: { legend: { display: false } } }
+                });
+            },
+
+            showReview() {
+                const list = document.getElementById('review-list');
+                list.innerHTML = '';
+                this.evaluations.forEach((a, i) => {
+                    const box = document.createElement('div');
+                    box.className = `p-5 rounded-2xl border-l-8 bg-white shadow-sm ${a.ok ? 'border-green-500' : 'border-red-500'}`;
+                    box.innerHTML = `
+                        <div class="font-black text-gray-800 text-lg mb-2">Câu ${i+1}: ${a.q}</div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="bg-gray-50 p-3 rounded-xl border"><div class="text-xs text-gray-500 font-bold mb-1">CỦA EM</div><div class="font-bold ${a.ok?'text-green-600':'text-red-600 line-through'}">${a.u}</div></div>
+                            <div class="bg-green-50 p-3 rounded-xl border border-green-100"><div class="text-xs text-green-600 font-bold mb-1">ĐÁP ÁN</div><div class="font-bold text-green-700">${a.c}</div></div>
+                        </div>
+                        ${!a.ok ? `<div class="mt-3 text-sm text-blue-800 bg-blue-50 p-2 rounded-lg">💡 ${a.exp}</div>` : ''}
+                    `;
+                    list.appendChild(box);
+                });
+                this.showScreen('review');
+            },
+
+            showResult() { this.showScreen('result'); },
+
+            submitData(finalScore, totalQuestions) {
+                if (!this.scriptURL) return;
+                
+                let sectionName = "";
+                if (this.selectedSection === "all") sectionName = "Tất cả các phần";
+                else if (this.selectedSection === "part1") sectionName = "Phần 1: Tổ chức lưu trữ";
+                else if (this.selectedSection === "part2") sectionName = "Phần 2: Đạo đức môi trường số";
+                else sectionName = "Phần 3: Giải quyết vấn đề";
+
+                const wrongCount = totalQuestions - this.correctCount;
+                
+                const data = {
+                    timestamp: new Date().toLocaleString('vi-VN'),
+                    name: this.studentName,
+                    className: this.studentClass,
+                    section: sectionName,
+                    correct: this.correctCount,
+                    score: finalScore,
+                    attempts: 1, 
+                    wrong: wrongCount
+                };
+
+                const formData = new URLSearchParams();
+                formData.append("data", JSON.stringify(data));
+
+                fetch(this.scriptURL, { method: "POST", body: formData })
+                .then(res => console.log("Gửi điểm thành công!"))
+                .catch(e => console.log("Lỗi gửi điểm:", e));
+            },
+
+            exportCSV() {
+                let csv = "Cau_Hoi,Dap_An_Cua_Em,Dap_An_Dung,Ket_Qua\n";
+                this.evaluations.forEach(a => {
+                    let q = a.q.replace(/"/g, '""').replace(/<[^>]*>?/gm, '');
+                    let u = a.u.replace(/"/g, '""').replace(/<[^>]*>?/gm, '');
+                    let c = a.c.replace(/"/g, '""').replace(/<[^>]*>?/gm, '');
+                    csv += `"${q}","${u}","${c}","${a.ok ? 'Dung' : 'Sai'}"\n`;
+                });
+                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", `Ket_Qua_Tin_Hoc_${this.studentName.replace(/\s+/g, '_')}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
